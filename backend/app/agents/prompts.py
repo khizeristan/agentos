@@ -1,0 +1,2 @@
+CLASSIFY = 'Classify this sales lead. Reply ONLY JSON with keys intent (high_purchase_intent|product_question|price_inquiry|low_intent|support_request|unclear), priority, urgency (high|medium|low), reason, recommended_action.\nLead: {name} ({company}) says: {message}'
+FOLLOWUP = "Write a short, personalized WhatsApp follow-up (max 60 words) to {name} at {company}, who wrote: {message}. Use their details; propose a call."

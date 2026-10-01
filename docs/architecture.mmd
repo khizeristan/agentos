@@ -1,0 +1,7 @@
+flowchart TD
+    U[Business Owner] --> UI[Dashboard] --> API[FastAPI API]
+    API --> AUTH[Auth + Permissions] --> AGENT[Agent Graph]
+    AGENT --> LLM[LLMProvider: Demo / Qwen]
+    AGENT --> TOOLS[Tool Registry] --> CRM[CRM] & WA[WhatsApp sim] & EM[Email sim] & CAL[Calendar] & DOCS[Docs]
+    AGENT --> APPROVAL[Human Approval Gate] -->|Approved| EXEC[Execute + Verify] --> AUDIT[Audit Log] --> PG[(PostgreSQL)]
+    EXEC --> REPORT[Report] --> UI

@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: agentos
+    runtime: docker
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    envVars:
+      - {key: DEMO_MODE, value: "true"}
+      - {key: JWT_SECRET, generateValue: true}

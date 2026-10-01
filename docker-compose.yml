@@ -1,0 +1,12 @@
+services:
+  backend:
+    build: ./backend
+    ports: ["8000:8000"]
+    env_file: .env.example
+    environment: {DATABASE_URL: "postgresql://agentos:agentos@postgres:5432/agentos"}
+    depends_on: [postgres]
+  postgres:
+    image: postgres:16
+    environment: {POSTGRES_USER: agentos, POSTGRES_PASSWORD: agentos, POSTGRES_DB: agentos}
+  redis: {image: "redis:7"}
+  qdrant: {image: "qdrant/qdrant"}

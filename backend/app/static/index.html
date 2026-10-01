@@ -1,0 +1,41 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AgentOS</title>
+<style>:root{--bg:#fafafa;--c:#fff;--b:#e5e5ea;--t:#18181b;--m:#71717a;--a:#4f46e5}@media(prefers-color-scheme:dark){:root{--bg:#0b0b0e;--c:#141418;--b:#26262c;--t:#ececf0;--m:#8b8b96;--a:#818cf8}}
+*{box-sizing:border-box}body{margin:0;font:14px/1.5 Inter,system-ui,sans-serif;background:var(--bg);color:var(--t);display:flex;min-height:100vh}
+aside{width:210px;border-right:1px solid var(--b);padding:20px 12px;background:var(--c)}aside h2{margin:0 8px}aside small{margin:0 8px 18px;display:block;color:var(--m)}
+nav a{display:block;padding:8px 10px;border-radius:8px;color:var(--m);cursor:pointer}nav a.on{background:var(--bg);color:var(--t);font-weight:600}
+main{flex:1;padding:28px;max-width:1100px}.card{background:var(--c);border:1px solid var(--b);border-radius:14px;padding:18px;margin-bottom:16px}
+input,textarea{width:100%;padding:10px;border:1px solid var(--b);border-radius:8px;background:var(--bg);color:var(--t);font:inherit}
+button{background:var(--a);color:#fff;border:0;border-radius:8px;padding:9px 16px;font:inherit;cursor:pointer}button.g{background:none;color:var(--t);border:1px solid var(--b)}
+.chip{display:inline-block;margin:8px 8px 0 0;padding:5px 11px;border:1px solid var(--b);border-radius:20px;cursor:pointer;color:var(--m)}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--b)}th{color:var(--m);font-weight:500}
+.bd{padding:2px 9px;border-radius:12px;font-size:12px;background:var(--bg);border:1px solid var(--b)}.high{color:#dc2626}.medium{color:#d97706}.low{color:#16a34a}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}.big{font-size:30px;font-weight:700}.m{color:var(--m)}.row{display:flex;gap:8px;margin-top:10px}
+#login{margin:12vh auto;width:340px}@media(max-width:700px){aside{display:none}}</style></head><body>
+<div id="login" class="card"><h2>AgentOS</h2><p class="m">AI Employee for Small Businesses</p><input id="em" value="demo@agentos.ai"><br><br><input id="pw" type="password" value="AgentOS-Demo-2026"><br><br><button onclick="login()">Sign in</button> <span id="err" class="m"></span></div>
+<aside style="display:none"><h2>AgentOS</h2><small>AI Employee</small><nav id="nav"></nav></aside><main style="display:none" id="main"></main>
+<script>
+let T=localStorage.t,page='Dashboard',poll;const P=['Dashboard','Leads','Tasks','Approvals','Reports','Settings'];
+const api=async(p,m='GET',b)=>{const r=await fetch('/api'+p,{method:m,headers:{'Content-Type':'application/json',Authorization:'Bearer '+T},body:b?JSON.stringify(b):undefined});if(r.status==401){localStorage.removeItem('t');location.reload()}return r.json()};
+const bd=v=>v?`<span class="bd ${v}">${v}</span>`:'<span class="m">-</span>';const tm=s=>new Date(s+'Z').toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+async function login(){const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:em.value,password:pw.value})});if(!r.ok){err.textContent='Invalid credentials';return}T=(await r.json()).token;localStorage.t=T;start()}
+function start(){login_.style.display='none';document.querySelector('aside').style.display='block';main_.style.display='block';nav.innerHTML=P.map(p=>`<a class="${p==page?'on':''}" onclick="go('${p}')">${p}</a>`).join('');render()}
+const login_=document.getElementById('login'),main_=document.getElementById('main');
+function go(p){page=p;start()}
+async function run(txt){await api('/agent/run','POST',{instruction:txt});page='Dashboard';start()}
+async function decide(id,a){await api(`/approvals/${id}/${a}`,'POST');render()}
+async function save(id){await api(`/approvals/${id}/edit`,'POST',{message:document.getElementById('m'+id).value});render()}
+async function render(){clearTimeout(poll);let h='';
+if(page=='Dashboard'){const [tk,ac]=await Promise.all([api('/agent/tasks'),api('/activity')]);const t=tk[0];
+h=`<h1>Good morning</h1><p class="m">Your AI employee is ready to work.</p><div class="card"><b>What would you like me to do?</b><div class="row"><input id="cmd" value="Process today's leads"><button onclick="run(cmd.value)">Run Agent</button></div>${["Process today's leads","Find customers who need follow-up","Prepare my morning report"].map(s=>`<span class="chip" onclick="cmd.value='${s}'">${s}</span>`).join('')}</div>`;
+if(t)h+=`<div class="card"><b>${t.id} - ${t.description}</b> <span class="bd">${t.status}</span>${t.steps.map(s=>`<div style="padding:5px 0">${s.status=='done'?'✓':s.status=='running'?'⏳':'○'} ${s.name} <span class="m">${s.detail}</span></div>`).join('')}${t.status=='waiting_approval'?'<div class="row"><button onclick="go(\'Approvals\')">Review approvals</button></div>':''}</div>`;
+h+=`<div class="card"><b>Activity</b>${ac.map(a=>`<div style="padding:4px 0"><span class="m">${tm(a.ts)}</span> ${a.text}</div>`).join('')||'<p class="m">No activity yet.</p>'}</div>`;
+if(t&&['queued','running'].includes(t.status))poll=setTimeout(render,1000)}
+if(page=='Leads'){const L=await api('/leads');h=`<h1>Leads</h1><div class="card"><table><tr><th>Name<th>Company<th>Source<th>Intent<th>Urgency<th>Priority<th>Last Contact<th>Status</tr>${L.map(l=>`<tr><td>${l.name}<td>${l.company||'-'}<td>${l.source}<td>${(l.intent||'-').replace(/_/g,' ')}<td>${bd(l.urgency)}<td>${bd(l.priority)}<td>${new Date(l.last_contact+'Z').toLocaleDateString()}<td><span class="bd">${l.status}</span></tr>`).join('')}</table></div>`}
+if(page=='Tasks'){const k=await api('/agent/tasks');h=`<h1>Tasks</h1>`+(k.map(t=>`<div class="card"><b>${t.id}</b> ${t.description} <span class="bd">${t.status}</span><div class="m">${t.steps.filter(s=>s.status=='done').length}/${t.steps.length} steps - ${t.type}</div></div>`).join('')||'<p class="m">No tasks yet.</p>')}
+if(page=='Approvals'){const A=await api('/approvals');h=`<h1>Approvals</h1><p class="m">Nothing is sent without your approval.</p>`+(A.map(a=>`<div class="card"><b>${a.lead.name}</b> ${bd('high')} <span class="m">${a.lead.company||''}</span><p class="m">Proposed action: send WhatsApp follow-up - <b>${a.status}</b></p>${a.status=='pending'?`<textarea id="m${a.id}" rows="3">${a.message}</textarea><div class="row"><button class="g" onclick="decide(${a.id},'reject')">Reject</button><button class="g" onclick="save(${a.id})">Save edit</button><button onclick="decide(${a.id},'approve')">Approve</button></div>`:`<p>"${a.message}"</p>${a.status=='approved'?'<p>✓ Message sent (simulated) ✓ CRM updated ✓ Activity logged</p>':''}`}</div>`).join('')||'<p class="m">Run the agent first.</p>')}
+if(page=='Reports'){const r=await api('/reports/today');const k=[['Leads Processed',r.leads_processed],['High Intent',r.high],['Medium',r.medium],['Low',r.low],['Follow-ups Sent',r.followups_sent],['Need Human Attention',r.needs_attention]];
+h=`<h1>Today's AI Report</h1><div class="grid">${k.map(([a,b])=>`<div class="card"><div class="big">${b}</div><div class="m">${a}</div></div>`).join('')}</div><div class="card"><b>High Priority Leads</b><p>${r.high_priority_leads.join(', ')||'-'}</p><b>Activity summary</b><p>✓ ${r.leads_processed} leads analyzed<br>✓ ${r.followups_sent} follow-ups approved<br>✓ ${r.crm_updated} CRM records updated<br>✓ ${r.needs_attention} flagged for human attention</p></div>`}
+if(page=='Settings'){const hh=await(await fetch('/api/health')).json();h=`<h1>Settings</h1><div class="card">Demo mode: <b>${hh.demo_mode}</b><br>User: demo@agentos.ai (admin)<br><button class="g" style="margin-top:10px" onclick="localStorage.clear();location.reload()">Sign out</button></div>`}
+main_.innerHTML=h}
+if(T)start()
+</script></body></html>
